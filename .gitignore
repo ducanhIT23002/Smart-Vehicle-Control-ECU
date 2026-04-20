@@ -8,6 +8,7 @@
 *.htm
 *.sct
 *.map
+*.md
 Objects/
 Listings/
 DebugConfig/
