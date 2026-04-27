@@ -2,10 +2,10 @@
 #include "gpio.h"
 #include "uart.h"
 
-#define LED_PORT 0
-#define LED_PIN  5
-#define BTN_PORT 0
-#define BTN_PIN  6
+#define LED_PORT 2
+#define LED_PIN  3
+#define BTN_PORT 1
+#define BTN_PIN  23
 
 void ECUAL_InitHardware(void) {
     GPIO_SetDir(LED_PORT, LED_PIN, 1);

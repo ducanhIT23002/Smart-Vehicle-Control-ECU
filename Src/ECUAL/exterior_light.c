@@ -1,8 +1,8 @@
 #include "exterior_light.h"
 #include "gpio.h"
 
-#define HEADLIGHT_PORT 0
-#define HEADLIGHT_PIN  7
+#define HEADLIGHT_PORT 1
+#define HEADLIGHT_PIN  28
 
 void ECUAL_Headlight_Init(void) {
     GPIO_SetDir(HEADLIGHT_PORT, HEADLIGHT_PIN, 1);

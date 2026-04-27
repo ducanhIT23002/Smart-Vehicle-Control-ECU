@@ -9,6 +9,9 @@
 *.sct
 *.map
 *.md
+*.pdf
+*.txt
+*.png
 Objects/
 Listings/
 DebugConfig/

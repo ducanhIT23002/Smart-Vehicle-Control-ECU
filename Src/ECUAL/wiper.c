@@ -1,23 +1,18 @@
 #include "wiper.h"
 #include "gpio.h"
-#include "timer.h"
 
-#define WIPER_MOTOR_PIN 10
-
-void Wiper_Action_Callback(void) {
-    GPIO_WritePin(0, WIPER_MOTOR_PIN, 1);   
-    for(volatile int i = 0; i < 50000; i++); 
-    GPIO_WritePin(0, WIPER_MOTOR_PIN, 0);
-}
+#define WIPER_MOTOR_PORT 1
+#define WIPER_MOTOR_PIN  29 
 
 void ECUAL_Wiper_Init(void) {
-    GPIO_SetDir(0, WIPER_MOTOR_PIN, 1);
-    MCAL_Timer0_SetCallback(Wiper_Action_Callback);
+    GPIO_SetDir(WIPER_MOTOR_PORT, WIPER_MOTOR_PIN, 1);
+    GPIO_WritePin(WIPER_MOTOR_PORT, WIPER_MOTOR_PIN, 0); 
 }
 
 void ECUAL_Wiper_SetMode(WiperMode_t mode) {
     if (mode == WIPER_INT) {
-        MCAL_Timer0_Init(3000);
+        GPIO_WritePin(WIPER_MOTOR_PORT, WIPER_MOTOR_PIN, 1);
     } else {
+        GPIO_WritePin(WIPER_MOTOR_PORT, WIPER_MOTOR_PIN, 0);
     }
 }
