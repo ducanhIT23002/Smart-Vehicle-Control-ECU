@@ -31,7 +31,7 @@ void MCAL_SPI_Init(void) {
 
     // 6. Xóa s?ch b? d?m nh?n (Flush RX FIFO) l? có rác
     while (LPC_SSP0->SR & (1 << 2)) {
-        volatile uint32_t dummy = LPC_SSP0->DR;
+        //volatile uint32_t dummy = LPC_SSP0->DR;
     }
 }
 

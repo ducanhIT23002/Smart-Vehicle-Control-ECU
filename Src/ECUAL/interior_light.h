@@ -9,4 +9,6 @@ void ECUAL_Light_FadeIn(void);
 
 void ECUAL_Light_FadeOut(void);
 
+uint8_t ECUAL_ReadDimmerSwitch(void);
+
 #endif

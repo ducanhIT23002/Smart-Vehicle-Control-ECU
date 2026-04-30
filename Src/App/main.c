@@ -1,71 +1,60 @@
 #include "LPC17xx.h"
-#include <stdio.h>
-
-// CHỈ SỬ DỤNG TẦNG RTE ĐỂ ĐẢM BẢO KIẾN TRÚC
-#include "Rte_Door.h"
-#include "Rte_Wiper.h"
-#include "Rte_Light.h"
-#include "Rte_Sensor.h"
 #include "gpio.h"
+#include "can_if.h"
+#include "uart.h"       
+#include "cmsis_os2.h" 
+#include "Rte_Types.h"
+#include "DoorControl_SWC.h"
+#include "WiperControl_SWC.h"
+#include "LightControl_SWC.h"
+#include "InputMonitor_SWC.h"
+extern void ECUAL_InitHardware(void);
+extern void ECUAL_Headlight_Init(void);
+extern void ECUAL_Light_Init(void);
+extern void ECUAL_LightSensor_Init(void);
+extern void ECUAL_Wiper_Init(void);
+extern void ECUAL_WiperSwitch_Init(void);
 
-void App_BCM_FullIntegration_Task(void) {
-    // --- 1. TEST CỬA (Rte_Read_DoorStatus & Rte_Write_P_DoorLed_Status) ---
-    // Sử dụng Joystick UP (P1.23)
-    if (Rte_Read_DoorStatus() == 0) { // Nhấn UP = Mở cửa
-        Rte_Write_P_DoorLed_Status(1); // Sáng LED P2.3
-    } else {
-        Rte_Write_P_DoorLed_Status(0); // Tắt LED P2.3
-    }
+extern void DoorControl_Task(void *argument);
+extern void WiperControl_Task(void *argument);
+extern void LightControl_Task(void *argument);
 
-    // --- 2. TEST GẠT MƯA (Rte_Read_WiperSwitch & Rte_Call_Wiper_Start/Stop) ---
-    // Sử dụng Joystick LEFT (P1.24)
-    if (Rte_Read_WiperSwitch() == 0) { // Nhấn LEFT = Bật gạt mưa
-        Rte_Call_Wiper_StartIntMode();  // Sáng LED P1.29
-        Rte_Write_WiperMode(WIPER_INT); // Test thêm hàm WriteMode
-    } else {
-        Rte_Call_Wiper_Stop();          // Tắt LED P1.29
-    }
-
-    // --- 3. TEST ÁNH SÁNG (Rte_Read_IsEnvironmentDark & Rte_Call_Headlight_TurnOn/Off) ---
-    // Sử dụng Joystick DOWN (P1.25) làm "Cảm biến giả"
-    if (Rte_Read_IsEnvironmentDark()) { // Nhấn DOWN = Trời tối
-        Rte_Call_Headlight_TurnOn();    // Sáng LED P1.28
-    } else {
-        Rte_Call_Headlight_TurnOff();   // Tắt LED P1.28
-    }
-
-    // --- 4. TEST DIMMER (Rte_Call_LightFadeIn / Rte_Call_LightFadeOut) ---
-    // Sử dụng Joystick RIGHT (P1.26)
-    static uint8_t last_right_sw = 1;
-    uint8_t current_right_sw = GPIO_ReadPin(1, 26); // Đọc trực tiếp để test logic Dimmer
-
-    if (current_right_sw == 0 && last_right_sw == 1) { 
-        Rte_Call_LightFadeIn();  // LED P2.2 sáng dần
-    } else if (current_right_sw == 1 && last_right_sw == 0) {
-        Rte_Call_LightFadeOut(); // LED P2.2 tắt dần
-    }
-    last_right_sw = current_right_sw;
-}
+osThreadId_t doorTask_id, wiperTask_id, lightTask_id;
+osThreadId_t inputTask_id;
+osMessageQueueId_t doorQueue;
+osMessageQueueId_t wiperQueue;
+osMessageQueueId_t lightQueue;
 
 int main(void) {
     SystemInit();
+    UART0_Init(9600);
+    UART0_SendString("\r\n=== System Booting ===\r\n");
     
-    // KHỞI TẠO TẤT CẢ PHẦN CỨNG (TẦNG ECUAL)
-    ECUAL_InitHardware();      // LED P2.3 & Switch P1.23
-    ECUAL_Headlight_Init();    // LED P1.28
-    ECUAL_Light_Init();        // LED P2.2 (PWM)
-    ECUAL_LightSensor_Init();  // Sẽ đọc P1.25 thay vì ADC để test
-    ECUAL_Wiper_Init();        // LED P1.29
-    ECUAL_WiperSwitch_Init();  // Joystick P1.24
+    ECUAL_InitHardware();      
+    ECUAL_Headlight_Init();  
+    ECUAL_Light_Init();        
+    ECUAL_LightSensor_Init();  
+    ECUAL_Wiper_Init();        
+    ECUAL_WiperSwitch_Init(); 
+    CanIf_Init(); 
 
-    // Cấu hình thêm P1.25 và P1.26 làm Input cho mục đích test
-    GPIO_SetDir(1, 25, 0); 
-    GPIO_SetDir(1, 26, 0);
+    DoorControl_Init();
+    WiperControl_Init();
+    LightControl_Init();
+	InputMonitor_Init();
+    osKernelInitialize(); 
 
-    while(1) {
-        App_BCM_FullIntegration_Task();
+    doorQueue  = osMessageQueueNew(5, sizeof(SystemEvent_t), NULL);
+    wiperQueue = osMessageQueueNew(5, sizeof(SystemEvent_t), NULL);
+    lightQueue = osMessageQueueNew(5, sizeof(SystemEvent_t), NULL);
 
-        // Delay chu kỳ để ổn định log và quan sát mắt thường
-        for(volatile int i = 0; i < 1000000; i++);
-    }
+    doorTask_id  = osThreadNew(DoorControl_Task, NULL, NULL);
+    wiperTask_id = osThreadNew(WiperControl_Task, NULL, NULL);
+    lightTask_id = osThreadNew(LightControl_Task, NULL, NULL);
+		inputTask_id = osThreadNew(InputMonitor_Task, NULL, NULL);
+    UART0_SendString("Starting OS Kernel...\r\n");
+    osKernelStart();
+
+    while(1) {} // System is now managed by RTOS
 }
+
