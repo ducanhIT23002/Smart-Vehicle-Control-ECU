@@ -3,7 +3,7 @@
 #include "Rte_Types.h"
 #include "cmsis_os2.h"
 #include "uart.h"
-
+#include "can_if.h"
 extern osMessageQueueId_t doorQueue;
 
 void DoorControl_Init(void) { }
@@ -17,10 +17,12 @@ __NO_RETURN void DoorControl_Task(void *argument) {
         if (osMessageQueueGet(doorQueue, &received_msg, NULL, osWaitForever) == osOK) {
             if (received_msg == SYS_EVT_DOOR_OPENED) {
                 Rte_Write_P_DoorLed_Status(LED_ON);
+                CanIf_Transmit(CAN_SIGNAL_DOOR_OPEN);
                 UART0_SendString("[Task Door] DOOR OPEN -> LED ON\r\n");
             } 
             else if (received_msg == SYS_EVT_DOOR_CLOSED) {
                 Rte_Write_P_DoorLed_Status(LED_OFF);
+                CanIf_Transmit(CAN_SIGNAL_DOOR_CLOSED);
                 UART0_SendString("[Task Door] DOOR CLOSED -> LED OFF\r\n");
             }
         }

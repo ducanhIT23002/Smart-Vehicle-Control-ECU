@@ -3,7 +3,7 @@
 #include "Rte_Types.h"
 #include "cmsis_os2.h" 
 #include "uart.h"
-
+#include "can_if.h"
 extern osMessageQueueId_t wiperQueue;
 
 static WiperMode_t current_wiper_mode;
@@ -24,8 +24,14 @@ __NO_RETURN void WiperControl_Task(void *argument) {
                 current_wiper_mode = (current_wiper_mode == WIPER_OFF) ? WIPER_INT : WIPER_OFF;
                 
                 Rte_Write_WiperMode(current_wiper_mode);
-                if(current_wiper_mode == WIPER_INT) UART0_SendString("[Task Wiper] Mode INT\r\n");
-                else UART0_SendString("[Task Wiper] Mode OFF\r\n");
+
+                if(current_wiper_mode == WIPER_INT) {
+                    CanIf_Transmit(CAN_SIGNAL_WIPER_ON); 
+                    UART0_SendString("[Task Wiper] Mode INT (CAN Sent)\r\n");
+                } else {
+                    CanIf_Transmit(CAN_SIGNAL_WIPER_OFF); 
+                    UART0_SendString("[Task Wiper] Mode OFF (CAN Sent)\r\n");
+                }
             }
         }
     }

@@ -3,7 +3,7 @@
 #include "Rte_Types.h"  
 #include "cmsis_os2.h"
 #include "uart.h"
-
+#include "can_if.h"
 extern osMessageQueueId_t lightQueue;
 
 static uint8_t is_interior_light_on = 0;
@@ -25,11 +25,13 @@ __NO_RETURN void LightControl_Task(void *argument) {
             switch (received_msg) {
                 case SYS_EVT_ENV_DARK:
                     Rte_Write_Headlight(LED_ON);
+                    CanIf_Transmit(CAN_SIGNAL_HEADLIGHT_ON);
                     UART0_SendString("[Task Light] Dark -> Headlight ON\r\n");
                     break;
 
                 case SYS_EVT_ENV_BRIGHT:
                     Rte_Write_Headlight(LED_OFF);
+                    CanIf_Transmit(CAN_SIGNAL_HEADLIGHT_OFF);
                     UART0_SendString("[Task Light] Bright -> Headlight OFF\r\n");
                     break;
 
@@ -37,9 +39,13 @@ __NO_RETURN void LightControl_Task(void *argument) {
                     if (is_interior_light_on == 0) {
                         Rte_Call_LightFadeIn();
                         is_interior_light_on = 1;
+                        CanIf_Transmit(CAN_SIGNAL_DIMMER_ON); 
+                        UART0_SendString("[Task Light] Dimmer ON (CAN Sent)\r\n");
                     } else {
                         Rte_Call_LightFadeOut();
                         is_interior_light_on = 0;
+                        CanIf_Transmit(CAN_SIGNAL_DIMMER_OFF); 
+                        UART0_SendString("[Task Light] Dimmer OFF (CAN Sent)\r\n");
                     }
                     break;
 
