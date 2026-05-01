@@ -5,7 +5,7 @@
 #include "Rte_Light.h"
 #include "Rte_Sensor.h"
 #include "cmsis_os2.h"
-
+#include "wdg_manager.h" 
 extern osMessageQueueId_t doorQueue;
 extern osMessageQueueId_t wiperQueue;
 extern osMessageQueueId_t lightQueue;
@@ -20,6 +20,8 @@ __NO_RETURN void InputMonitor_Task(void *argument) {
     static EnvLightState_t last_env = ENV_BRIGHT; 
 
     while(1) {
+        WdgM_CheckpointReached(WDG_INPUT_TASK_ID);
+
         SystemEvent_t event_msg;
 
         uint8_t current_door = Rte_Read_DoorStatus();

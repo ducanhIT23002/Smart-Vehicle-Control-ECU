@@ -4,6 +4,7 @@
 #include "cmsis_os2.h"
 #include "uart.h"
 #include "can_if.h"
+#include "wdg_manager.h"
 extern osMessageQueueId_t doorQueue;
 
 void DoorControl_Init(void) { }
@@ -13,8 +14,9 @@ __NO_RETURN void DoorControl_Task(void *argument) {
     UART0_SendString("[Task Door] Ready & Waiting...\r\n");
 
     while(1) {
+        WdgM_CheckpointReached(WDG_DOOR_TASK_ID);
         SystemEvent_t received_msg;
-        if (osMessageQueueGet(doorQueue, &received_msg, NULL, osWaitForever) == osOK) {
+        if (osMessageQueueGet(doorQueue, &received_msg, NULL, 500) == osOK) {
             if (received_msg == SYS_EVT_DOOR_OPENED) {
                 Rte_Write_P_DoorLed_Status(LED_ON);
                 CanIf_Transmit(CAN_SIGNAL_DOOR_OPEN);

@@ -4,6 +4,7 @@
 #include "cmsis_os2.h"
 #include "uart.h"
 #include "can_if.h"
+#include "wdg_manager.h"
 extern osMessageQueueId_t lightQueue;
 
 static uint8_t is_interior_light_on = 0;
@@ -19,7 +20,7 @@ __NO_RETURN void LightControl_Task(void *argument) {
 
     while(1) {
         SystemEvent_t received_msg;
-        osStatus_t status = osMessageQueueGet(lightQueue, &received_msg, NULL, osWaitForever);
+        osStatus_t status = osMessageQueueGet(lightQueue, &received_msg, NULL, 500);
 
         if (status == osOK) {
             switch (received_msg) {

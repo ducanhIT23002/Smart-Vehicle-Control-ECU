@@ -4,6 +4,7 @@
 #include "cmsis_os2.h" 
 #include "uart.h"
 #include "can_if.h"
+#include "wdg_manager.h"
 extern osMessageQueueId_t wiperQueue;
 
 static WiperMode_t current_wiper_mode;
@@ -19,7 +20,7 @@ __NO_RETURN void WiperControl_Task(void *argument) {
 
     while(1) {
         SystemEvent_t received_msg;
-        if (osMessageQueueGet(wiperQueue, &received_msg, NULL, osWaitForever) == osOK) {
+        if (osMessageQueueGet(wiperQueue, &received_msg, NULL, 500) == osOK) {
             if (received_msg == SYS_EVT_WIPER_BTN_PRESSED) {
                 current_wiper_mode = (current_wiper_mode == WIPER_OFF) ? WIPER_INT : WIPER_OFF;
                 

@@ -3,23 +3,25 @@
 ## 📌 Project Overview
 This project simulates an automotive **Body Control Module (BCM)** using the NXP LPC1768 microcontroller. It is designed based on the **AUTOSAR Layered Architecture** and utilizes a strictly **Event-Driven** model powered by CMSIS-RTOS2 Message Queues. 
 
-To closely reflect real-world automotive software standards, all physical state changes are abstracted and broadcasted over a simulated **CAN Bus network** to notify other ECUs in the vehicle (e.g., Instrument Cluster).
+To closely reflect real-world automotive software standards, the system includes an **Alive Supervision Watchdog** mechanism (ISO 26262 Functional Safety concept) and broadcasts state changes over a simulated **CAN Bus network** to notify other ECUs.
 
 ## 🛠️ Technologies & Hardware
 *   **Microcontroller:** NXP LPC1768 (ARM Cortex-M3)
 *   **RTOS:** CMSIS-RTOS2 (Keil RTX5)
 *   **Language:** Embedded C
 *   **Architecture:** AUTOSAR-inspired (App SWC, RTE, ECUAL, MCAL, Services)
-*   **Peripherals Used:** CAN, UART, ADC, DMA, PWM, GPIO
+*   **Peripherals Used:** CAN, WDT, UART, ADC, DMA, PWM, GPIO
 
 ## 🧩 Software Architecture
 The codebase is strictly modularized into distinct layers:
-1.  **APP (Software Components - SWCs):** Contains core logic for Door, Wiper, and Light control. Tasks sleep efficiently (`osWaitForever`) until an event occurs.
+1.  **APP (Software Components - SWCs):** Contains core logic for Door, Wiper, and Light control. 
 2.  **RTE (Runtime Environment):** Acts as the communication bridge. SWCs interact with hardware solely through RTE macros.
 3.  **ECUAL & MCAL:** Abstracts hardware components and handles direct microcontroller register manipulation.
-4.  **Services (CAN Interface - CanIf):** Abstracts the CAN stack. App layer sends semantic signals (e.g., `CAN_SIGNAL_DOOR_OPEN`), and `CanIf` translates them into specific CAN IDs and Data Payloads.
+4.  **Services:** 
+    *   **CanIf (CAN Interface):** Abstracts the CAN stack, translating semantic signals into specific CAN IDs and Data Payloads.
+    *   **WdgM (Watchdog Manager):** Manages system health and prevents software deadlocks.
 
-## 📡 CAN Network Matrix & Workflows
+## 📡 CAN Network Matrix
 Every state change triggers a CAN broadcast to synchronize the vehicle's network.
 
 | Feature | Trigger Event | Physical Action | CAN ID | Payload (DataA) | Meaning |
@@ -29,8 +31,7 @@ Every state change triggers a CAN broadcast to synchronize the vehicle's network
 | **Auto Headlight** | ADC light sensor drops | Activate Headlight | `0x300` | `0x0001` / `0x0000` | Headlight ON / OFF |
 | **Interior Dimmer**| Dimmer Joystick interacted| PWM Smooth Fade In/Out | `0x400` | `0x0001` / `0x0000` | Dimmer ON / OFF |
 
-## ⚙️ RTOS Implementation Details
-*   **Producer-Consumer Model:** Replaced all `osDelay()` polling mechanisms in control tasks.
+## ⚙️ RTOS & Safety Implementation Details
+*   **Event-Driven Architecture:** Replaced all `osDelay()` polling mechanisms. Control tasks pend on dedicated Queues (`osWaitForever` / timeout) and consume **0% CPU** while waiting.
 *   **Input Monitor Task (Producer):** A dedicated background task that polls sensors, performs edge detection, and pushes standard `SystemEvent_t` messages into specific Message Queues.
-*   **Control Tasks (Consumers):** Isolated tasks that pend on dedicated Queues (`doorQueue`, `wiperQueue`, `lightQueue`). They consume **0% CPU** while waiting, drastically reducing power consumption.
-*   **Data Logging:** UART is strictly used for real-time system state and CAN transmission debugging.
+*   **System Safety (Alive Supervision):** Implemented an AUTOSAR-like Watchdog Manager (`WdgM`). It avoids "blind feeding" by requiring all control SWCs to periodically report their health status (`WdgM_CheckpointReached`). If any task is trapped in a deadlock, the Hardware WDT forces a system reset to ensure fail-safe operation.
