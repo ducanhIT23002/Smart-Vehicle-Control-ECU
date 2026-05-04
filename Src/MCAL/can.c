@@ -80,8 +80,14 @@ void CAN1_Init(void) {
 
 
 void CAN1_Send(CAN_Message *msg) {
-    while (!(LPC_CAN1->SR & (1 << 2))); 
-    
+    uint32_t timeout = 100000; 
+
+    while (!(LPC_CAN1->SR & (1 << 2))) {
+        timeout--;
+        if (timeout == 0) {
+            return; 
+        }
+    }    
     LPC_CAN1->TFI1 = (msg->dlc << 16); 
     LPC_CAN1->TID1 = msg->id;
     LPC_CAN1->TDA1 = msg->dataA;

@@ -19,6 +19,7 @@ __NO_RETURN void WiperControl_Task(void *argument) {
     UART0_SendString("[Task Wiper] Ready & Waiting...\r\n");
 
     while(1) {
+        WdgM_CheckpointReached(WDG_WIPER_TASK_ID);
         SystemEvent_t received_msg;
         if (osMessageQueueGet(wiperQueue, &received_msg, NULL, 500) == osOK) {
             if (received_msg == SYS_EVT_WIPER_BTN_PRESSED) {

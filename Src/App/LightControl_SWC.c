@@ -19,6 +19,7 @@ __NO_RETURN void LightControl_Task(void *argument) {
     UART0_SendString("[Task Light] Ready & Waiting for Events...\r\n");
 
     while(1) {
+        WdgM_CheckpointReached(WDG_LIGHT_TASK_ID);
         SystemEvent_t received_msg;
         osStatus_t status = osMessageQueueGet(lightQueue, &received_msg, NULL, 500);
 

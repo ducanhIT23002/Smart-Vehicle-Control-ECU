@@ -3,7 +3,7 @@
 
 void WDT_Init(uint32_t timeout_ms) {
 
-    uint32_t wd_counter = (timeout_ms * 125); 
+    uint32_t wd_counter = (timeout_ms * 1000); 
 
     LPC_WDT->WDTC = wd_counter;
 

@@ -6,6 +6,7 @@
 #include "Rte_Sensor.h"
 #include "cmsis_os2.h"
 #include "wdg_manager.h" 
+
 extern osMessageQueueId_t doorQueue;
 extern osMessageQueueId_t wiperQueue;
 extern osMessageQueueId_t lightQueue;
